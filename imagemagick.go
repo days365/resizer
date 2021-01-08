@@ -75,7 +75,9 @@ func doResize(ctx context.Context, e GCSEvent, r io.Reader, size int) error {
 	}
 
 	outputBlob := storageClient.Bucket(e.Bucket).Object(name)
+	w := outputBlob.NewWriter(ctx)
 	defer func() {
+		w.Close()
 		attrs := storage.ObjectAttrsToUpdate{
 			Metadata: map[string]string{
 				"isResized": "true",
@@ -85,9 +87,6 @@ func doResize(ctx context.Context, e GCSEvent, r io.Reader, size int) error {
 			log.Printf("[error] %s", err)
 		}
 	}()
-
-	w := outputBlob.NewWriter(ctx)
-	defer w.Close()
 
 	cmd := exec.Command("convert", "-", "-resize", fmt.Sprintf("%dx", size), "-")
 	cmd.Stdin = r
